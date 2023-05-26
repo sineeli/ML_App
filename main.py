@@ -3,7 +3,10 @@ import numpy as np
 import tensorflow as tf
 from fastapi import FastAPI, File, UploadFile
 
-with open('./tf-models/imagenet1000_clsidx_to_labels.txt') as f:
+models_dir = "tf-models"
+ckpts_dir = "tfm-ckpts"
+
+with open(f'./{models_dir}/imagenet1000_clsidx_to_labels.txt') as f:
     imagenet_id_to_label = eval(f.read())
 
 
@@ -16,7 +19,7 @@ def load_models():
         dict: loaded models
     """
 
-    resnet50 = tf.saved_model.load('./tf-models/resnet50')
+    resnet50 = tf.saved_model.load(f'./{models_dir}/resnet50')
 
     models = {
         'resnet50': resnet50.signatures['serving_default']
