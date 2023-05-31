@@ -23,9 +23,7 @@ app.include_router(user.router)
 app.include_router(auth.router)
 app.include_router(image_classification.router)
 
+
 @app.get("/")
 def home():
     return {"message": "Serve started successfully"}
-
-
-

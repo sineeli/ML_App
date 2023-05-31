@@ -11,16 +11,17 @@ router = APIRouter(
     tags=['Image Classification']
 )
 
+
 @router.post("/predict")
-async def classify_image(db: Session=Depends(get_db), 
-                         file: UploadFile=File(...),
-                         get_current_user: int=Depends(oauth2.get_current_user)):
+async def classify_image(db: Session = Depends(get_db),
+                         file: UploadFile = File(...),
+                         get_current_user: int = Depends(oauth2.get_current_user)):
     """
     Predict uploaded image class from the Imagenet Dataset.
 
     Args:
         file: File object (allowed extension: .jpg, jpeg, png)
-    
+
     Return:
         prediction: Predicted class
     """
