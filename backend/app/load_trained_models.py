@@ -2,68 +2,25 @@ import os
 import requests
 import tarfile
 import yaml
-import logging
+
 import tensorflow as tf
+from google.cloud import storage
 
-from official.core import exp_factory
-from official.vision.serving import export_saved_model_lib
 
-MODELS_DIR = 'app/tf-models'
-CKPTS_DIR = 'app/tfm-ckpts'
-CONFIGS_PATH = 'app/ml_exp_configs'
+
+# from official.core import exp_factory
+# from official.vision.serving import export_saved_model_lib
+
+BUCKET_NAME =  'tf2-exported-models'
 
 PWD = os.getcwd()
 
-if not os.path.exists(f'{PWD}/{MODELS_DIR}'):
-    os.mkdir(f'{PWD}/{MODELS_DIR}')
+if not os.path.exists(f'{PWD}/tf-models'):
+    os.mkdir(f'{PWD}/tf-models')
 
-if not os.path.exists(f'{PWD}/{CKPTS_DIR}'):
-    os.mkdir(f'{PWD}/{CKPTS_DIR}')
-
-
-def download_ckpts():
-    resnet50_i224_url = "https://storage.googleapis.com/tf_model_garden/vision/resnet/resnet-50-i224.tar.gz"
-    r = requests.get(resnet50_i224_url, stream=True)
-    with open(f'{PWD}/{MODELS_DIR}/resnet-50-i224.tar.gz', 'wb') as f:
-        f.write(r.raw.read())
-    tar = tarfile.open(f'{PWD}/{MODELS_DIR}/resnet-50-i224.tar.gz')
-    tar.extractall(f'{PWD}/{CKPTS_DIR}/resnet-50-i224-ckpt/')
-    tar.close()
-    os.remove(f'{PWD}/{MODELS_DIR}/resnet-50-i224.tar.gz')
-
-def export_model(model):
-    exp_config = exp_factory.get_exp_config('resnet_imagenet')
-
-    with open(f'{PWD}/{CONFIGS_PATH}/imagenet_resnet50_tpu.yaml', 'r') as file:
-        override_params = yaml.full_load(file)
-
-    exp_config.override(override_params=override_params, is_strict=False)
-    export_saved_model_lib.export_inference_graph(
-        input_type='image_tensor',
-        batch_size=1,
-        input_image_size=[224, 224],
-        checkpoint_path=tf.train.latest_checkpoint(
-            f'{PWD}/{CKPTS_DIR}/{model}-ckpt/'),
-        params=exp_config,
-        export_dir=f'{PWD}/{MODELS_DIR}/{model}/'
-    )
+MODELS_DIR = f'{PWD}/tf-models'
 
 
-def convert_ckpts():
-    if not os.path.exists("{PWD}/{MODELS_DIR}/resnet-50-i224/"):
-        export_model("resnet-50-i224")
-
-
-
-
-if not os.path.exists(f'{PWD}/{MODELS_DIR}/imagenet1000_clsidx_to_labels.txt'):
-    url ='https://gist.githubusercontent.com/yrevar/942d3a0ac09ec9e5eb3a/raw/238f720ff059c1f82f368259d1ca4ffa5dd8f9f5/imagenet1000_clsidx_to_labels.txt'
-    r = requests.get(url, allow_redirects=True)
-    with open('./imagenet1000_clsidx_to_labels.txt', 'wb') as f:
-        f.write(r.content)
-
-with open(f'{PWD}/{MODELS_DIR}/imagenet1000_clsidx_to_labels.txt') as f:
-    IMGNET_ID_TO_LABEL = eval(f.read())
 
 CARDS_CLASSES = ['ace of clubs', 'ace of diamonds', 'ace of hearts', 'ace of spades', 'eight of clubs',
                  'eight of diamonds', 'eight of hearts', 'eight of spades', 'five of clubs',
@@ -78,7 +35,7 @@ CARDS_CLASSES = ['ace of clubs', 'ace of diamonds', 'ace of hearts', 'ace of spa
                  'two of clubs', 'two of diamonds', 'two of hearts', 'two of spades']
 
 
-def load_models():
+def load_model(model_name):
     """
     load the models from disk
     and put them in a dictionary
@@ -87,19 +44,58 @@ def load_models():
         dict: loaded models
     """
 
-    cards_model = tf.saved_model.load(f'{PWD}/{MODELS_DIR}/poker_cards_image_model/')
+    model = tf.saved_model.load(f'{MODELS_DIR}/{model_name}')
+    return model
 
-    models = {
-        'cards_model': cards_model.signatures['serving_default']
-    }
 
-    return models
+def download_and_unzip_tar_gz(bucket_name, file_name, destination_folder):
+    # Instantiate a client
+    client = storage.Client()
 
-# download_ckpts()
-# logging.info(msg="Checkpoints downloaded")
+    # Get the bucket
+    bucket = client.get_bucket(bucket_name)
 
-# convert_ckpts()
-# logging.info(msg="Checkpoints converted")
+    # Get the blob (file)
+    blob = bucket.blob(file_name)
 
-MODELS_DICT = load_models()
-logging.info(msg="Models Loaded")
+    # Download the blob to a local file
+    local_file_path = f"{destination_folder}/{file_name}"
+    blob.download_to_filename(local_file_path)
+
+    # Extract the contents of the tar.gz file
+    with tarfile.open(local_file_path, "r:gz") as tar:
+        tar.extractall(path=destination_folder)
+
+    # Remove the downloaded tar.gz file
+    os.remove(local_file_path)
+    
+    
+def download_models(model_name):
+    models_list = os.listdir(MODELS_DIR)
+    if model_name not in models_list:
+        MODEL_PATH = os.path.join(MODELS_DIR, 
+                                  model_name)
+        download_and_unzip_tar_gz(BUCKET_NAME, 
+                                  f'{model_name}.tar.gz',
+                                  MODELS_DIR)
+        print("Downloaded from GCP")
+    else:
+        print("Model already present in local server")
+
+
+MODELS_LIST = ['card_classification', 
+               'car_num_plate_detection']
+
+print("Downloading models started...")
+
+for model_name in MODELS_LIST:
+    download_models(model_name)
+    
+print("All models downloaded")
+
+print("Models loading started...")
+MODELS_DICT = {}
+for model_name in MODELS_LIST:
+    MODELS_DICT[model_name] = load_model(model_name)
+
+print("Models loaded")

@@ -163,3 +163,5 @@ imagenet_test/
 tf-models/
 tfm-ckpts/
 models/
+
+.DS_Store
