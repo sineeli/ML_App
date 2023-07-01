@@ -5,7 +5,6 @@ from app import models
 from app.database import engine
 from app.routers import auth, image_classification, user
 
-models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
