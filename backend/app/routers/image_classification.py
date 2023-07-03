@@ -1,21 +1,79 @@
-import tensorflow as tf
+import cv2
+import numpy as np
+import json
+import requests
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app import oauth2
 from app.database import get_db
-from app.load_trained_models import MODELS_DICT, CARDS_CLASSES
 
-router = APIRouter(
-    prefix="/image_classification",
-    tags=['Image Classification']
-)
+router = APIRouter(prefix="/image_classification", tags=["Image Classification"])
+
+
+CARDS_CLASSES = [
+    "ace of clubs",
+    "ace of diamonds",
+    "ace of hearts",
+    "ace of spades",
+    "eight of clubs",
+    "eight of diamonds",
+    "eight of hearts",
+    "eight of spades",
+    "five of clubs",
+    "five of diamonds",
+    "five of hearts",
+    "five of spades",
+    "four of clubs",
+    "four of diamonds",
+    "four of hearts",
+    "four of spades",
+    "jack of clubs",
+    "jack of diamonds",
+    "jack of hearts",
+    "jack of spades",
+    "joker",
+    "king of clubs",
+    "king of diamonds",
+    "king of hearts",
+    "king of spades",
+    "nine of clubs",
+    "nine of diamonds",
+    "nine of hearts",
+    "nine of spades",
+    "queen of clubs",
+    "queen of diamonds",
+    "queen of hearts",
+    "queen of spades",
+    "seven of clubs",
+    "seven of diamonds",
+    "seven of hearts",
+    "seven of spades",
+    "six of clubs",
+    "six of diamonds",
+    "six of hearts",
+    "six of spades",
+    "ten of clubs",
+    "ten of diamonds",
+    "ten of hearts",
+    "ten of spades",
+    "three of clubs",
+    "three of diamonds",
+    "three of hearts",
+    "three of spades",
+    "two of clubs",
+    "two of diamonds",
+    "two of hearts",
+    "two of spades",
+]
 
 
 @router.post("/cards_image/predict")
-async def classify_image(db: Session = Depends(get_db),
-                         file: UploadFile = File(...),
-                         get_current_user: int = Depends(oauth2.get_current_user)):
+async def classify_image(
+    db: Session = Depends(get_db),
+    file: UploadFile = File(...),
+    get_current_user: int = Depends(oauth2.get_current_user),
+):
     """
     Predict uploaded image class from the Imagenet Dataset.
 
@@ -28,40 +86,39 @@ async def classify_image(db: Session = Depends(get_db),
     extension = file.filename.split(".")[-1] in ("jpg", "jpeg", "png")
     if not extension:
         return "Image must be jpg or png format!"
-    if extension in ("jpg", "jpeg"):
-        img = tf.io.decode_jpeg(await file.read())
-    else:
-        img = tf.io.decode_png(await file.read(), channels=3)
-    img = tf.expand_dims(img, axis=0)
-    prediction = MODELS_DICT['cards_model'](img)
-    id = int(tf.argmax(prediction['probs'][0]).numpy())
-    return {
-        "class": CARDS_CLASSES[id]
+
+    image_bytes = await file.read()
+    image_np = np.frombuffer(image_bytes, np.uint8)
+    img = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img = cv2.resize(img, dsize=(224, 224))
+    img = img[np.newaxis, ...]
+
+    payload = {
+        "model_spec": {
+            "name": "card_classification",
+            "signature_name": "serving_default",
+            "version": "1",
+        },
+        "inputs": {"inputs": img.tolist()},
     }
+    # Prepare the request headers
+    headers = {"Content-Type": "application/json"}
 
-@router.post("/car_number_plate/predict")
-async def classify_image(db: Session = Depends(get_db),
-                         file: UploadFile = File(...),
-                         get_current_user: int = Depends(oauth2.get_current_user)):
-    """
-    Predict uploaded image class from the Imagenet Dataset.
+    # Convert the payload to JSON
+    payload_json = json.dumps(payload)
 
-    Args:
-        file: File object (allowed extension: .jpg, jpeg, png)
+    # Send the POST request to the container
+    response = requests.post(
+        "http://localhost:8501/v1/models/card_classification:predict",
+        data=payload_json,
+        headers=headers,
+    )
 
-    Return:
-        prediction: Predicted class
-    """
-    extension = file.filename.split(".")[-1] in ("jpg", "jpeg", "png")
-    if not extension:
-        return "Image must be jpg or png format!"
-    if extension in ("jpg", "jpeg"):
-        img = tf.io.decode_jpeg(await file.read())
-    else:
-        img = tf.io.decode_png(await file.read(), channels=3)
-    img = tf.expand_dims(img, axis=0)
-    prediction = MODELS_DICT['car_nam'](img)
-    id = int(tf.argmax(prediction['probs'][0]).numpy())
-    return {
-        "class": CARDS_CLASSES[id]
-    }
+    # Process the prediction response
+    if response.status_code != 200:
+        return {"Error:", response.text}
+
+    prediction = response.json()["outputs"]
+
+    return {"class": CARDS_CLASSES[np.argmax(prediction["probs"][0])]}
