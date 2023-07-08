@@ -1,22 +1,22 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useState } from "react";
 import LoginPage from "./Login";
 import RegisterPage from "./Register";
-import { useState } from "react";
-import MainPage from "./Home"
+import ImageClassifcationPage from "./ImageClassification";
+import HomePage from "./Home";
+import { CardsClassification } from "./CardsClassification";
 
 export default function AppPage() {
-  const [currentForm, setCurrentForm] = useState('login')
-
-  const toggleForm = (formName) => {
-    setCurrentForm(formName)
-  }
 
   return (
-    // <div className="flex items-center justify-center h-screen bg-gradient-to-r from-blue-400 to-purple-400">
-    //   {currentForm === 'login' ? <LoginPage onFormSwitch={toggleForm} /> : <RegisterPage onFormSwitch={toggleForm}/>}
-    // </div>
-    <div>
-      <MainPage/>
-    </div>
-    
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<LoginPage />} />
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/register" element={<RegisterPage/>} />
+          <Route path="/image-classification" element={<ImageClassifcationPage/>}/>
+          <Route path="/cards-classification" element={<CardsClassification/>}/>
+        </Routes>
+      </BrowserRouter>
   );
 }

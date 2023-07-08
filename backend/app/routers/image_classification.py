@@ -70,8 +70,8 @@ CARDS_CLASSES = [
 
 @router.post("/cards_image/predict")
 async def classify_image(
+    file: UploadFile,
     db: Session = Depends(get_db),
-    file: UploadFile = File(...),
     get_current_user: int = Depends(oauth2.get_current_user),
 ):
     """
@@ -85,7 +85,7 @@ async def classify_image(
     """
     extension = file.filename.split(".")[-1] in ("jpg", "jpeg", "png")
     if not extension:
-        return "Image must be jpg or png format!"
+        raise HTTPException(status_code=422, detail="Invalid file format. Only jpeg and png images are supported.")
 
     image_bytes = await file.read()
     image_np = np.frombuffer(image_bytes, np.uint8)

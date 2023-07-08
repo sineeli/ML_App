@@ -1,11 +1,13 @@
 import { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 export default function RegisterPage(props) {
   const [email, setEmail] = useState("");
   const [username, setUserename] = useState("");
   const [password, setPassword] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const navigate = useNavigate();
 
   const handleEmailChange = (e) => {
     setEmail(e.target.value);
@@ -21,6 +23,10 @@ export default function RegisterPage(props) {
   const handlePhoneNumberChange = (e) => {
     setPhoneNumber(e.target.value);
   };
+
+  function handleClick() {
+    navigate('/');
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -49,6 +55,7 @@ export default function RegisterPage(props) {
   };
 
   return (
+    <div className="flex items-center justify-center h-screen bg-gradient-to-r from-blue-400 to-purple-400">
     <div className="max-w-md w-full px-6 py-8 bg-white rounded-lg shadow-md bg-opacity-70 backdrop-filter backdrop-blur-lg">
       <h2 className="text-2xl font-bold mb-8 text-center">Register</h2>
       <form onSubmit={handleSubmit}>
@@ -118,13 +125,14 @@ export default function RegisterPage(props) {
         <p className="text-gray-500 text-sm">
           Already have an account?
           <button
-            onClick={() => props.onFormSwitch("login")}
             className="text-blue-500"
+            onClick={handleClick}
           >
             Login
           </button>
         </p>
       </div>
+    </div>
     </div>
   );
 };
