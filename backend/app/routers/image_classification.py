@@ -121,4 +121,6 @@ async def classify_image(
 
     prediction = response.json()["outputs"]
 
-    return {"class": CARDS_CLASSES[np.argmax(prediction["probs"][0])]}
+    return {"class": CARDS_CLASSES[np.argmax(prediction["probs"][0])],
+            "prob": f'{np.max(prediction["probs"][0]):.2f}'
+            }

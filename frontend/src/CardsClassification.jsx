@@ -5,6 +5,7 @@ import { Navbar, TaskTile } from "./Utils";
 export function CardsClassification() {
   const [uploadedImage, setUploadedImage] = useState(null);
   const [classificationResult, setClassificationResult] = useState("");
+  const [classificationProbability, setClassificationProbability] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleImageUpload = async (event) => {
@@ -36,10 +37,12 @@ export function CardsClassification() {
 
       setUploadedImage(URL.createObjectURL(file));
       setClassificationResult(response.data.class);
+      setClassificationProbability(response.data.prob);
       console.log(response.data);
     } catch (error) {
       console.error("Classification failed", error);
       setClassificationResult("Invalid file format. Please upload a JPEG or PNG image.");
+      setClassificationProbability("");
     } finally {
       setIsLoading(false); // Set loading back to false
     }
@@ -90,7 +93,8 @@ export function CardsClassification() {
               </div>
             ) : classificationResult ? (
               <div className="bg-gray-200 p-4 rounded-lg">
-                <p className="text-gray-800">{classificationResult}</p>
+                <p className="text-gray-800"><i><strong>Class:</strong></i> {classificationResult}</p>
+                <p className="text-gray-600"><i><strong>Probability:</strong></i>  {classificationProbability}</p>
               </div>
             ) : (
               <p className="text-gray-500">No classification result yet</p>
