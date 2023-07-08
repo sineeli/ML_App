@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useSignIn } from "react-auth-kit";
 
 export default function LoginPage(props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const signIn = useSignIn();
+  const location = useLocation();
 
   const handleEmailChange = (e) => {
     setEmail(e.target.value);
@@ -40,11 +43,24 @@ export default function LoginPage(props) {
       // Redirect or perform other actions after successful login
       console.log("Login successful", response.data);
       // Store token and expiration time in localStorage
-      const token = response.data.access_token;
-      const expiration = new Date().getTime() + 30 * 1000;
-      localStorage.setItem("token", token);
-      localStorage.setItem("expiration", expiration);
-      navigate("/home");
+      // const token = response.data.access_token;
+      // const expiration = new Date().getTime() + 30 * 1000;
+      // localStorage.setItem("token", token);
+      // localStorage.setItem("expiration", expiration);
+      signIn({
+        token: response.data.access_token,
+        expiresIn: 30,
+        tokenType: response.data.token_type,
+        authState: { email: email}
+      }
+      )
+      
+      const { state } = location;
+      if (state && state.from) {
+        navigate(state.from);
+      } else {
+        navigate("/"); // Default redirection if no original page is stored
+      }
     } catch (error) {
       // Handle login error
       console.error("Login failed", error);
@@ -52,21 +68,21 @@ export default function LoginPage(props) {
   };
 
   // Check token expiration on component mount
-  React.useEffect(() => {
-    const token = localStorage.getItem("token");
-    const expiration = localStorage.getItem("expiration");
+  // React.useEffect(() => {
+  //   const token = localStorage.getItem("token");
+  //   const expiration = localStorage.getItem("expiration");
 
-    if (token && expiration) {
-      const currentTime = new Date().getTime();
-      if (currentTime >= expiration) {
-        // Token expired, redirect to login page
-        navigate("/");
-      } else {
-        // Token still valid, redirect to home page
-        navigate("/home");
-      }
-    }
-  }, [navigate]);
+  //   if (token && expiration) {
+  //     const currentTime = new Date().getTime();
+  //     if (currentTime >= expiration) {
+  //       // Token expired, redirect to login page
+  //       navigate("/login");
+  //     } else {
+  //       // Token still valid, redirect to home page
+  //       navigate("/");
+  //     }
+  //   }
+  // }, [navigate]);
 
   return (
     <div className="flex items-center justify-center h-screen bg-gradient-to-r from-blue-400 to-purple-400">

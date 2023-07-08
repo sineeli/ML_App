@@ -25,7 +25,7 @@ export default function RegisterPage(props) {
   };
 
   function handleClick() {
-    navigate('/');
+    navigate('/login');
   }
 
   const handleSubmit = async (e) => {

@@ -1,24 +1,26 @@
-import React, { useState } from "react";
+import React, { useState} from "react";
 import axios from "axios";
-import { Navbar, TaskTile } from "./Utils";
+import { useCookies } from "react-cookie";
+import { Navbar } from "./Utils";
 
 export function CardsClassification() {
   const [uploadedImage, setUploadedImage] = useState(null);
   const [classificationResult, setClassificationResult] = useState("");
   const [classificationProbability, setClassificationProbability] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [cookies] = useCookies(["authToken"]);
 
   const handleImageUpload = async (event) => {
+
     const file = event.target.files[0];
-    const token = localStorage.getItem("token");
 
     try {
       if (!file.type.match(/image\/(jpeg|png)/)) {
         setUploadedImage(null);
-        throw new Error("Invalid file format. Please upload a JPEG or PNG image.");
+        setClassificationResult(null);
+        setClassificationProbability(null);
+        alert("Invalid file format. Please upload a JPEG or PNG image.");
+        return;
       }
-
-      setIsLoading(true); // Set loading to true
 
       const formData = new FormData();
       formData.append("file", file);
@@ -30,7 +32,7 @@ export function CardsClassification() {
           headers: {
             "accept": "application/json",
             "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${cookies._auth}`,
           },
         }
       );
@@ -41,10 +43,9 @@ export function CardsClassification() {
       console.log(response.data);
     } catch (error) {
       console.error("Classification failed", error);
-      setClassificationResult("Invalid file format. Please upload a JPEG or PNG image.");
+      setClassificationResult("");
       setClassificationProbability("");
-    } finally {
-      setIsLoading(false); // Set loading back to false
+      alert("Classification failed. Please try again.");
     }
   };
 
@@ -87,11 +88,7 @@ export function CardsClassification() {
           )}
           <div className="ml-8">
             <p className="text-2xl font-bold mb-4">Classification Result</p>
-            {isLoading ? (
-              <div className="flex items-center justify-center w-32 h-32">
-                <div className="animate-spin rounded-full border-t-4 border-gray-400 border-opacity-50 h-16 w-16"></div>
-              </div>
-            ) : classificationResult ? (
+            {classificationResult ? (
               <div className="bg-gray-200 p-4 rounded-lg">
                 <p className="text-gray-800"><i><strong>Class:</strong></i> {classificationResult}</p>
                 <p className="text-gray-600"><i><strong>Probability:</strong></i>  {classificationProbability}</p>

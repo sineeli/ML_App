@@ -8,7 +8,7 @@ export default function ImageClassifcationPage() {
         <div className="ml-4 mr-4">
           <h1 className="text-2xl font-bold mb-2 text-gray-800">Experiments</h1>
           <div className="flex flex-wrap">
-            <Link to="/cards-classification">
+            <Link to="cards-classification">
             <TaskTile
                 taskname="Cards Classification"
                 src="./cards.jpg"

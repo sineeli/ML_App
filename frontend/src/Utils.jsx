@@ -1,5 +1,7 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FaUser } from "react-icons/fa";
+import { useState } from "react";
+import { useSignOut } from "react-auth-kit";
 
 export function TaskTile({ taskname, src }) {
   return (
@@ -18,16 +20,47 @@ export function TaskTile({ taskname, src }) {
   );
 }
 
+
 export function Navbar() {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const signOut = useSignOut();
+  const navigate = useNavigate();
+
+  const handleToggleDropdown = () => {
+    setIsDropdownOpen((prevState) => !prevState);
+  };
+
+  const handleLogout = () => {
+    signOut();
+    navigate("/login");
+  };
+
   return (
     <nav className="flex items-center p-4 mb-2 bg-slate-300">
-      <Link className="flex-grow text-xl font-bold" to="/Home">
+      <Link className="flex-grow text-xl font-bold" to="/">
         <h1>Home</h1>
       </Link>
 
-      <div className="flex items-center justify-end">
-        <FaUser className="mr-2" size={30} style={{ borderRadius: "50%" }} />
+      <div className="relative">
+        <div
+          className="flex items-center cursor-pointer"
+          onClick={handleToggleDropdown}
+        >
+          <FaUser className="mr-2" size={30} style={{ borderRadius: "50%" }} />
+        </div>
+
+        {isDropdownOpen && (
+          <div className="absolute right-0 mt-2 py-2 w-48 bg-white border border-gray-300 rounded shadow">
+            <button
+              className="block px-4 py-2 text-gray-800 hover:bg-gray-100 w-full text-left"
+              onClick={handleLogout}
+            >
+              Logout
+            </button>
+          </div>
+        )}
       </div>
     </nav>
   );
 }
+
