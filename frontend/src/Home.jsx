@@ -15,8 +15,13 @@ export default function HomePage() {
               src="./image_classification.jpg"
             />
           </Link>
+          <Link to="/object-detection">
+            <TaskTile
+              taskname="Object Detection"
+              src="./object_detection.webp"
+            />
+          </Link>
 
-          <TaskTile taskname="Object Detection" src="./object_detection.webp" />
           <TaskTile taskname="Time Series" src={"./time_series.webp"} />
         </div>
       </div>
